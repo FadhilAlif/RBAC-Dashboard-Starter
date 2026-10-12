@@ -1,5 +1,7 @@
 import { Module, Controller, Get } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { DatabaseModule } from "./database/database.module.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
 import { UsersModule } from "./modules/users/users.module.js";
@@ -9,6 +11,7 @@ import { AuditLogsModule } from "./modules/audit-logs/audit-logs.module.js";
 import { DashboardModule } from "./modules/dashboard/dashboard.module.js";
 import { NotificationsModule } from "./modules/notifications/notifications.module.js";
 import { Public } from "./common/decorators/public.decorator.js";
+import { AuditLogInterceptor } from "./common/interceptors/audit-log.interceptor.js";
 
 @Controller()
 export class AppController {
@@ -27,6 +30,13 @@ export class AppController {
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ThrottlerModule.forRoot([
+      {
+        name: "default",
+        ttl: 60000,
+        limit: 60,
+      },
+    ]),
     DatabaseModule,
     AuthModule,
     UsersModule,
@@ -37,5 +47,15 @@ export class AppController {
     NotificationsModule,
   ],
   controllers: [AppController],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditLogInterceptor,
+    },
+  ],
 })
 export class AppModule {}

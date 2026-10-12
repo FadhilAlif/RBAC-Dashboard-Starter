@@ -22,6 +22,7 @@ import { UsersService } from "./users.service.js";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard.js";
 import { PermissionsGuard } from "../../common/guards/permissions.guard.js";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator.js";
+import { Audit } from "../../common/decorators/audit.decorator.js";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe.js";
 import {
   createUserSchema,
@@ -82,6 +83,7 @@ export class UsersController {
     return { data: user };
   }
 
+  @Audit({ action: "users:create", resourceType: "users" })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @RequirePermissions("users:create")
@@ -94,6 +96,7 @@ export class UsersController {
     };
   }
 
+  @Audit({ action: "users:update", resourceType: "users", resourceIdParam: "id" })
   @Patch(":id")
   @RequirePermissions("users:update")
   @UsePipes(new ZodValidationPipe(updateUserSchema))
@@ -108,6 +111,7 @@ export class UsersController {
     };
   }
 
+  @Audit({ action: "users:delete", resourceType: "users", resourceIdParam: "id" })
   @Delete(":id")
   @RequirePermissions("users:delete")
   async deleteUser(@Param("id", ParseIntPipe) id: number) {
@@ -118,6 +122,7 @@ export class UsersController {
     };
   }
 
+  @Audit({ action: "users:assign_roles", resourceType: "users", resourceIdParam: "id" })
   @Put(":id/roles")
   @RequirePermissions("users:update")
   @UsePipes(new ZodValidationPipe(syncRolesSchema))
@@ -132,6 +137,7 @@ export class UsersController {
     };
   }
 
+  @Audit({ action: "users:remove_role", resourceType: "users", resourceIdParam: "id" })
   @Delete(":id/roles/:roleId")
   @RequirePermissions("users:update")
   async removeRole(

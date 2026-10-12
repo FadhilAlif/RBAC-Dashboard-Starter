@@ -18,6 +18,9 @@ import type {
   UpdateUserInput,
 } from "./users.schemas.js";
 
+import { PermissionsCacheService } from "../permissions/permissions-cache.service.js";
+import { Optional } from "@nestjs/common";
+
 const INVITE_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export interface UserItem {
@@ -40,6 +43,9 @@ export class UsersService {
     @Inject(DRIZZLE_DB) private readonly db: DrizzleDatabase,
     @Inject(TokenService) private readonly tokenService: TokenService,
     @Inject(MailService) private readonly mailService: MailService,
+    @Optional()
+    @Inject(PermissionsCacheService)
+    private readonly permissionsCacheService?: PermissionsCacheService,
   ) {}
 
   async listUsers(
@@ -245,6 +251,8 @@ export class UsersService {
         email: anonymizedEmail,
       })
       .where(eq(users.id, userId));
+
+    await this.permissionsCacheService?.invalidateUser(userId);
   }
 
   async syncRoles(userId: number, roleIds: number[]): Promise<void> {
@@ -267,12 +275,16 @@ export class UsersService {
         }
       }
     });
+
+    await this.permissionsCacheService?.invalidateUser(userId);
   }
 
   async removeRole(userId: number, roleId: number): Promise<void> {
     await this.db
       .delete(userRoles)
       .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)));
+
+    await this.permissionsCacheService?.invalidateUser(userId);
   }
 
   async buildUsersExportWorkbook(

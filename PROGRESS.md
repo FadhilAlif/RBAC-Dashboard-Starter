@@ -120,5 +120,9 @@ Proyek ini sedang dalam proses perombakan tech stack dari template starter awal 
   - [x] Implementasi `MailService` modern (`backend/src/modules/auth/mail.service.ts`) menggunakan Resend SDK dengan graceful simulation mode untuk local dev dan unit tests.
   - [x] HTML & text templates responsive modern untuk email verifikasi, reset password, undangan pengguna, dan notifikasi perubahan password.
   - [x] Unit test komprehensif `backend/src/modules/auth/__tests__/mail.service.test.ts` (8 passing test cases: formatting, simulation mode, API error handling, exception fallback).
-  - [x] Total passing tests bertambah menjadi **154 passing tests** across workspaces.
+- [x] **Backend Production Enhancements**:
+  - [x] **Rate Limiting (@nestjs/throttler)**: Konfigurasi rate limiting global (`60 req/min`) dan limit ketat (`@Throttle({ default: { limit: 5, ttl: 60000 } })`) pada endpoint sensitif (`/api/auth/login`, `/api/auth/register`, `/api/auth/forgot-password`, `/api/auth/reset-password`, dan `3 req/min` pada `/api/auth/resend-verification`) untuk mencegah serangan brute force dan credential stuffing.
+  - [x] **Permissions Caching (Redis / In-Memory Cache)**: Implementasi `PermissionsCacheService` dengan dual-engine (Redis via `ioredis` dan high-speed In-Memory fallback ber-TTL 10 menit) untuk meng-cache daftar izin user. Terintegrasi langsung dengan `PermissionsGuard` untuk meminimalkan beban query ke NeonDB, serta invalidasi otomatis saat admin mengubah role/izin user di `UsersService`, `RolesService`, dan `PermissionsService`.
+  - [x] **Declarative Audit Log Decorator & Interceptor**: Pembuatan decorator deklaratif `@Audit(...)` dan global interceptor `AuditLogInterceptor` (`APP_INTERCEPTOR`). Menangkap metadata aksi, tipe resource, ID resource dari request/response, IP address, user ID, serta otomatis mensanitasi password/token sensitif (`[REDACTED]`) tanpa perlu logging manual di service layer.
+  - [x] Total automated tests meningkat menjadi **162 passing tests** across workspaces (Backend: 35, Frontend: 121, CLI: 6).
 

@@ -22,6 +22,7 @@ import { PermissionsService } from "./permissions.service.js";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard.js";
 import { PermissionsGuard } from "../../common/guards/permissions.guard.js";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator.js";
+import { Audit } from "../../common/decorators/audit.decorator.js";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe.js";
 import {
   createPermissionSchema,
@@ -78,6 +79,7 @@ export class PermissionsController {
     return { data: perm };
   }
 
+  @Audit({ action: "permissions:create", resourceType: "permissions" })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @RequirePermissions("permissions:create")
@@ -90,6 +92,7 @@ export class PermissionsController {
     };
   }
 
+  @Audit({ action: "permissions:update", resourceType: "permissions", resourceIdParam: "id" })
   @Patch(":id")
   @RequirePermissions("permissions:update")
   @UsePipes(new ZodValidationPipe(updatePermissionSchema))
@@ -104,6 +107,7 @@ export class PermissionsController {
     };
   }
 
+  @Audit({ action: "permissions:delete", resourceType: "permissions", resourceIdParam: "id" })
   @Delete(":id")
   @RequirePermissions("permissions:delete")
   async deletePermission(@Param("id", ParseIntPipe) id: number) {

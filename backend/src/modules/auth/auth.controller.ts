@@ -13,10 +13,12 @@ import {
 } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import type { Request, Response } from "express";
+import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service.js";
 import { TokenService } from "./token.service.js";
 import { Public } from "../../common/decorators/public.decorator.js";
 import { CurrentUser } from "../../common/decorators/current-user.decorator.js";
+import { Audit } from "../../common/decorators/audit.decorator.js";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard.js";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe.js";
 import type { AuthenticatedUser } from "../../common/types/authenticated-user.type.js";
@@ -50,6 +52,7 @@ export class AuthController {
     @Inject(TokenService) private readonly tokenService: TokenService,
   ) {}
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Public()
   @Post("register")
   @HttpCode(HttpStatus.CREATED)
@@ -67,6 +70,7 @@ export class AuthController {
     };
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Public()
   @Post("login")
   @HttpCode(HttpStatus.OK)
@@ -194,6 +198,7 @@ export class AuthController {
     };
   }
 
+  @Audit({ action: "auth:change_password", resourceType: "auth" })
   @Post("change-password")
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ZodValidationPipe(changePasswordSchema))
@@ -242,6 +247,7 @@ export class AuthController {
     };
   }
 
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Public()
   @Post("resend-verification")
   @HttpCode(HttpStatus.OK)
@@ -254,6 +260,7 @@ export class AuthController {
     };
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Public()
   @Post("forgot-password")
   @HttpCode(HttpStatus.OK)
@@ -266,6 +273,7 @@ export class AuthController {
     };
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Public()
   @Post("reset-password")
   @HttpCode(HttpStatus.OK)

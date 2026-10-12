@@ -1,4 +1,5 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Optional } from "@nestjs/common";
+import { PermissionsCacheService } from "./permissions-cache.service.js";
 import { and, count, desc, eq, ilike, inArray, ne, notInArray } from "drizzle-orm";
 import { DRIZZLE_DB } from "../../database/database.module.js";
 import type { DrizzleDatabase } from "../../database/connection.js";
@@ -24,7 +25,12 @@ export interface PermissionItem {
 
 @Injectable()
 export class PermissionsService {
-  constructor(@Inject(DRIZZLE_DB) private readonly db: DrizzleDatabase) {}
+  constructor(
+    @Inject(DRIZZLE_DB) private readonly db: DrizzleDatabase,
+    @Optional()
+    @Inject(PermissionsCacheService)
+    private readonly permissionsCacheService?: PermissionsCacheService,
+  ) {}
 
   async listPermissions(page: number = 1, limit: number = 50, search?: string, usage?: string) {
     const conditions = [];
@@ -166,6 +172,8 @@ export class PermissionsService {
         ...(input.description !== undefined ? { description: input.description } : {}),
       })
       .where(eq(permissions.id, id));
+
+    await this.permissionsCacheService?.invalidateAll();
   }
 
   async deletePermission(id: number): Promise<void> {
@@ -178,6 +186,7 @@ export class PermissionsService {
     if (!perm) throw new Error("PERMISSION_NOT_FOUND");
 
     await this.db.delete(permissions).where(eq(permissions.id, id));
+    await this.permissionsCacheService?.invalidateAll();
   }
 
   async buildPermissionsExportWorkbook(search?: string, usage?: string): Promise<Buffer> {

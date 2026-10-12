@@ -14,7 +14,8 @@ describe("MailService", () => {
   });
 
   it("should simulate email sending when RESEND_API_KEY is not configured", async () => {
-    const result = await mailService.sendEmail({
+    const simulationService = new MailService("");
+    const result = await simulationService.sendEmail({
       to: "user@example.com",
       subject: "Test Subject",
       text: "Test content",

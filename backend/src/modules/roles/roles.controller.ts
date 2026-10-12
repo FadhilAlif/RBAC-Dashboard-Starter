@@ -22,6 +22,7 @@ import { RolesService } from "./roles.service.js";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard.js";
 import { PermissionsGuard } from "../../common/guards/permissions.guard.js";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator.js";
+import { Audit } from "../../common/decorators/audit.decorator.js";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe.js";
 import {
   assignPermissionSchema,
@@ -81,6 +82,7 @@ export class RolesController {
     return { data: role };
   }
 
+  @Audit({ action: "roles:create", resourceType: "roles" })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @RequirePermissions("roles:create")
@@ -93,6 +95,7 @@ export class RolesController {
     };
   }
 
+  @Audit({ action: "roles:update", resourceType: "roles", resourceIdParam: "id" })
   @Patch(":id")
   @RequirePermissions("roles:update")
   @UsePipes(new ZodValidationPipe(updateRoleSchema))
@@ -107,6 +110,7 @@ export class RolesController {
     };
   }
 
+  @Audit({ action: "roles:delete", resourceType: "roles", resourceIdParam: "id" })
   @Delete(":id")
   @RequirePermissions("roles:delete")
   async deleteRole(@Param("id", ParseIntPipe) id: number) {
@@ -117,6 +121,7 @@ export class RolesController {
     };
   }
 
+  @Audit({ action: "roles:sync_permissions", resourceType: "roles", resourceIdParam: "id" })
   @Put(":id/permissions")
   @RequirePermissions("roles:update")
   @UsePipes(new ZodValidationPipe(syncPermissionsSchema))
@@ -131,6 +136,7 @@ export class RolesController {
     };
   }
 
+  @Audit({ action: "roles:assign_permission", resourceType: "roles", resourceIdParam: "id" })
   @Post(":id/permissions")
   @RequirePermissions("roles:update")
   @UsePipes(new ZodValidationPipe(assignPermissionSchema))
@@ -145,6 +151,7 @@ export class RolesController {
     };
   }
 
+  @Audit({ action: "roles:remove_permission", resourceType: "roles", resourceIdParam: "id" })
   @Delete(":id/permissions/:permissionId")
   @RequirePermissions("roles:update")
   async removePermission(

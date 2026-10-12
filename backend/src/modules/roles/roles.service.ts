@@ -15,6 +15,9 @@ import type {
   UpdateRoleInput,
 } from "./roles.schemas.js";
 
+import { PermissionsCacheService } from "../permissions/permissions-cache.service.js";
+import { Optional } from "@nestjs/common";
+
 export interface RoleUserItem {
   id: number;
   name: string;
@@ -33,7 +36,12 @@ export interface RoleItem {
 
 @Injectable()
 export class RolesService {
-  constructor(@Inject(DRIZZLE_DB) private readonly db: DrizzleDatabase) {}
+  constructor(
+    @Inject(DRIZZLE_DB) private readonly db: DrizzleDatabase,
+    @Optional()
+    @Inject(PermissionsCacheService)
+    private readonly permissionsCacheService?: PermissionsCacheService,
+  ) {}
 
   async listRoles(
     page: number = 1,
@@ -199,6 +207,7 @@ export class RolesService {
     if (!role) throw new Error("ROLE_NOT_FOUND");
 
     await this.db.delete(roles).where(eq(roles.id, roleId));
+    await this.permissionsCacheService?.invalidateAll();
   }
 
   async syncPermissions(roleId: number, permissionIds: number[]): Promise<void> {
@@ -221,6 +230,8 @@ export class RolesService {
         }
       }
     });
+
+    await this.permissionsCacheService?.invalidateAll();
   }
 
   async assignPermission(roleId: number, permissionId: number): Promise<void> {
@@ -236,12 +247,16 @@ export class RolesService {
       .insert(rolePermissions)
       .values({ roleId, permissionId })
       .onConflictDoNothing();
+
+    await this.permissionsCacheService?.invalidateAll();
   }
 
   async removePermission(roleId: number, permissionId: number): Promise<void> {
     await this.db
       .delete(rolePermissions)
       .where(and(eq(rolePermissions.roleId, roleId), eq(rolePermissions.permissionId, permissionId)));
+
+    await this.permissionsCacheService?.invalidateAll();
   }
 
   async buildRolesExportWorkbook(search?: string, permission?: string): Promise<Buffer> {

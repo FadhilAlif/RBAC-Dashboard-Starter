@@ -20,11 +20,13 @@ export class MailService {
   private resend: Resend | null = null;
   private readonly fromAddress: string;
 
-  constructor() {
-    this.fromAddress = env.EMAIL_FROM || env.RESEND_FROM || "onboarding@resend.dev";
+  constructor(apiKey?: string, fromAddress?: string) {
+    this.fromAddress = fromAddress || env.EMAIL_FROM || env.RESEND_FROM || "onboarding@resend.dev";
 
-    if (env.RESEND_API_KEY && env.RESEND_API_KEY.trim() !== "") {
-      this.resend = new Resend(env.RESEND_API_KEY);
+    const effectiveKey = apiKey !== undefined ? apiKey : env.RESEND_API_KEY;
+
+    if (effectiveKey && effectiveKey.trim() !== "") {
+      this.resend = new Resend(effectiveKey);
       this.logger.log("Resend client initialized successfully");
     } else {
       this.logger.warn("RESEND_API_KEY is not configured. Emails will be simulated in console logs.");
