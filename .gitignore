@@ -1,0 +1,51 @@
+# Planning docs (local only)
+*PLAN.md
+PRD.md
+TRACKING.md
+TODO.md
+DESIGN_BRIEF.md
+.claude/
+docs/superpowers/**/*
+frontend/.superpowers/**/*/
+frontend/docs/superpowers/**/*
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Prisma generated client
+backend/src/generated/
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Misc
+*.pem
+
+# CLI package — generated at publish time
+packages/cli/templates/
+packages/cli/dist/

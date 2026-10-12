@@ -1,0 +1,12 @@
+export interface AuditLog {
+  id: number;
+  userId: number | null;
+  userName: string | null;
+  userEmail: string | null;
+  action: string;
+  resourceType: string;
+  resourceId: number | null;
+  details: Record<string, unknown> | null;
+  ipAddress: string | null;
+  createdAt: string;
+}
