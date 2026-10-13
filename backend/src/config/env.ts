@@ -27,6 +27,7 @@ const envSchema = z
     RESEND_API_KEY: z.string().optional().default(""),
     RESEND_FROM: z.string().default("onboarding@resend.dev"),
     EMAIL_FROM: z.string().optional(),
+    REDIS_URL: z.string().optional(),
     APP_NAME: z.string().default("RBAC App"),
   });
 

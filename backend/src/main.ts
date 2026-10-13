@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import cookieParser from "cookie-parser";
+import helmet from "helmet";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { Logger } from "@nestjs/common";
 import { AppModule } from "./app.module.js";
@@ -11,6 +12,23 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter.js";
 async function bootstrap() {
   const logger = new Logger("Bootstrap");
   const app = await NestFactory.create(AppModule);
+
+  // HTTP Security Headers (OWASP Best Practices + Swagger UI compatibility)
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", "data:", "https:"],
+        },
+      },
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+      frameguard: { action: "deny" },
+      referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    }),
+  );
 
   app.enableCors({
     origin: env.FRONTEND_URL,
