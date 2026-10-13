@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Optional } from "@nestjs/common";
 import { Resend } from "resend";
 import { env } from "../../config/env.js";
 
@@ -20,7 +20,7 @@ export class MailService {
   private resend: Resend | null = null;
   private readonly fromAddress: string;
 
-  constructor(apiKey?: string, fromAddress?: string) {
+  constructor(@Optional() apiKey?: string, @Optional() fromAddress?: string) {
     this.fromAddress = fromAddress || env.EMAIL_FROM || env.RESEND_FROM || "onboarding@resend.dev";
 
     const effectiveKey = apiKey !== undefined ? apiKey : env.RESEND_API_KEY;
