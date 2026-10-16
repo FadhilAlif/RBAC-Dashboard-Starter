@@ -39,7 +39,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
-    "next": "16.2.6",
+    "next": "16.4.2",
     "postcss": "^8.5.15",
     "react": "19.2.6",
     "react-dom": "19.2.6",
@@ -59,9 +59,9 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.2",
-    "@vitest/coverage-v8": "^4.1.6",
+    "@vitest/coverage-v8": "^4.1.12",
     "jsdom": "^29.1.1",
     "typescript": "^6",
-    "vitest": "^4.1.6"
+    "vitest": "^4.1.12"
   }
 }
