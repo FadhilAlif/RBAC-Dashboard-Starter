@@ -21,4 +21,8 @@ describe("ZodValidationPipe", () => {
     const input = { name: "A", age: -5 };
     expect(() => pipe.transform(input, { type: "body" })).toThrow(BadRequestException);
   });
+
+  it("should pass through route params untouched when validating body", () => {
+    expect(pipe.transform(42, { type: "param", data: "id" })).toBe(42);
+  });
 });

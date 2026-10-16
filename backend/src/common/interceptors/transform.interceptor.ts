@@ -21,11 +21,17 @@ export class TransformInterceptor<T> implements NestInterceptor<T, ApiResponse<T
 
     return next.handle().pipe(
       map((result) => {
-        // Jangan wrap binary files, stream, atau buffers (seperti export Excel)
+        // Jangan wrap binary files, SSE stream events, atau buffers (seperti export Excel)
         if (
           result instanceof StreamableFile ||
           Buffer.isBuffer(result) ||
-          response.getHeader("content-type")?.toString().includes("spreadsheet")
+          response.getHeader("content-type")?.toString().includes("spreadsheet") ||
+          response.getHeader("content-type")?.toString().includes("text/event-stream") ||
+          (result &&
+            typeof result === "object" &&
+            "type" in result &&
+            "data" in result &&
+            !("success" in result))
         ) {
           return result;
         }

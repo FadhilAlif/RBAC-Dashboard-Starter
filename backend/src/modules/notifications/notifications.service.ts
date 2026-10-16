@@ -9,6 +9,7 @@ import {
   notificationRoles,
   notifications,
   userRoles,
+  users,
 } from "../../database/schema/index.js";
 import type { BroadcastNotificationInput } from "./notifications.schemas.js";
 
@@ -23,6 +24,7 @@ export interface NotificationItem {
   title: string;
   message: string;
   is_read: boolean;
+  creator_name: string;
   created_at: Date;
 }
 
@@ -115,6 +117,7 @@ export class NotificationsService {
         id: notifications.id,
         title: notifications.title,
         message: notifications.message,
+        creatorName: users.fullName,
         createdAt: notifications.createdAt,
       })
       .from(notifications)
@@ -122,6 +125,7 @@ export class NotificationsService {
         notificationRoles,
         eq(notifications.id, notificationRoles.notificationId),
       )
+      .leftJoin(users, eq(notifications.createdBy, users.id))
       .where(inArray(notificationRoles.roleId, roleIds))
       .orderBy(desc(notifications.createdAt));
 
@@ -140,6 +144,7 @@ export class NotificationsService {
           title: n.title,
           message: n.message,
           is_read: readSet.has(n.id),
+          creator_name: n.creatorName ?? "System",
           created_at: n.createdAt,
         });
       }

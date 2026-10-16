@@ -1,146 +1,102 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding assistants (Claude Code, Antigravity, Cursor) when working with code in this repository.
 
-## What this repo is
+## Project Overview
 
-This repo is **two things at once**:
+Production-ready **Role-Based Access Control (RBAC)** starter template built as an npm workspaces monorepo (`backend`, `frontend`, `packages/cli`).
 
-1. A working **RBAC dashboard application** — `backend/` (Express 5 + Prisma + MySQL) and `frontend/` (Next.js 16 App Router) — that runs locally.
-2. The **`rbac-boilerplate` npm package** (`packages/cli/`) that scaffolds that application into a new project via `npx rbac-boilerplate <name>`. The CLI bundles `backend/`, `frontend/`, and `docs/` as templates at publish time.
+| Layer | Technology |
+|---|---|
+| **Backend** | NestJS 12, TypeScript (ESM via `tsx`), Express platform |
+| **Database & ORM** | PostgreSQL / NeonDB Serverless + Drizzle ORM (`drizzle-orm`, `drizzle-kit`) |
+| **Authentication** | Stateless JWT (`access_token` 15m, `refresh_token` 7d) in `httpOnly` cookies with DB token rotation |
+| **Authorization** | `@RequirePermissions("resource:action")` + `PermissionsGuard` backed by `PermissionsCacheService` (Redis via `ioredis` + 10m TTL In-Memory fallback) |
+| **Rate Limiting** | `@nestjs/throttler` via custom `AppThrottlerGuard` (60 req/min global; 5 req/min on auth endpoints) |
+| **Audit Logging** | Declarative `@Audit()` decorator + global `AuditLogInterceptor` with automatic sensitive field redaction |
+| **Email Service** | Resend SDK (`resend`) with automatic local console simulation fallback |
+| **Security Headers** | `helmet` on Backend + custom security `headers()` in `frontend/next.config.ts` |
+| **Frontend** | Next.js 16 (App Router, Turbopack), React 19, Tailwind CSS v4, Shadcn UI (Radix Primitives + CVA) |
+| **State & Data** | Zustand (persisted auth store) + TanStack React Query v5 + Axios (auto-refresh interceptor) |
+| **Linter & Formatter** | Biome (`@biomejs/biome`) at root |
+| **Testing** | Vitest across `backend`, `frontend`, and `packages/cli` |
 
-So `backend/` and `frontend/` are *both* the live app *and* the source for the published templates. A change to the app is also a change to what end users scaffold.
-
-## Repository layout
-
-```
-rbac-boilerplate/
-├── backend/                    # Express 5 API (ESM, "type": "module")
-│   ├── prisma/                 # schema.prisma + migrations/
-│   ├── seeders/                # seed.ts (permissions + roles)
-│   ├── scripts/                # create-admin.ts (interactive)
-│   └── src/
-│       ├── config/             # env.ts (Zod, fail-fast), swagger.ts
-│       ├── routes/             # Express routers + Swagger JSDoc
-│       ├── controllers/        # request parse + response shaping
-│       ├── services/           # business logic, throws typed errors
-│       ├── repositories/       # Prisma queries only
-│       ├── middleware/         # auth, permission, validate, audit-log, rate-limit
-│       ├── schemas/            # Zod request schemas
-│       ├── lib/                # prisma.ts, http-response.ts, handle-error.ts, exporters/
-│       ├── generated/prisma/   # generated client (gitignored) — import from here
-│       ├── constants/  types/  utils/
-│       ├── app.ts              # express app factory (mounts /api/* routers)
-│       └── index.ts            # bootstrap / listen
-│
-├── frontend/                   # Next.js 16 App Router
-│   └── src/
-│       ├── app/
-│       │   ├── (auth)/         # login, register, forgot/reset-password, verify-email[-sent]
-│       │   └── (dashboard)/    # dashboard, users, roles, permissions, audit-logs, notifications, profile
-│       ├── features/<domain>/  # auth, users, roles, permissions, audit-logs, dashboard, notifications, profile
-│       │                       #   each: components/ hooks/ types.ts *.schema.ts <Name>Page.tsx index.ts
-│       └── shared/             # components/{common,guard,layout,ui}, hooks, lib, providers, stores, types
-│
-├── packages/cli/               # the published `rbac-boilerplate` npm package
-│   ├── bin/rbac-boilerplate.js # executable entry (the `npx` target)
-│   ├── src/                    # index, prompts, scaffold, post-install
-│   ├── scripts/copy-templates.js  # publish-time: builds templates/ from ../../{backend,frontend,docs}
-│   ├── templates/              # generated, gitignored — bundled into the package
-│   └── dist/                   # tsc output, gitignored
-│
-└── docs/                       # SETUP, API, INTEGRATION, ARCHITECTURE (shipped into scaffolds)
-```
-
-Backend and frontend mirror each other by **layer vs. feature**: the backend is split by technical layer (`routes → controllers → services → repositories`), the frontend by domain (`features/<name>/` with co-located components, hooks, schemas).
+---
 
 ## Commands
 
-All commands run from the repo root (npm workspaces). The root package is `rbac-boilerplate-root` (private); the publishable package is `packages/cli` (`name: rbac-boilerplate`).
+Run from the **root** directory unless noted:
 
 ```bash
-# Dev servers (two terminals)
-npm run dev:backend          # tsx watch → http://localhost:3001 (Swagger at /api/docs)
-npm run dev:frontend         # next dev --turbopack → http://localhost:3000
+# Development
+npm run dev:backend          # NestJS watch mode on http://localhost:3001 (Swagger at /api/docs)
+npm run dev:frontend         # Next.js 16 (Turbopack) on http://localhost:3000
 
-# Database (Prisma) — prisma:generate is REQUIRED before seed/run and after any schema change
-npm run prisma:generate
-npm run migrate              # prisma migrate deploy
-npm run migrate:dev          # create + apply a new migration
-npm run migrate:reset
-npm run seed                 # 14 permissions + 2 roles (admin gets all, user gets none)
-npm run create-admin         # interactive admin creation
+# Database (Drizzle ORM + PostgreSQL / NeonDB)
+npm run db:generate          # Generate SQL migrations from Drizzle schema
+npm run migrate              # Apply Drizzle migrations to PostgreSQL / NeonDB
+npm run db:push              # Push Drizzle schema directly (dev only)
+npm run db:studio            # Open Drizzle Studio GUI
+npm run seed                 # Seed 14 default permissions + admin/user roles (idempotent upsert)
+npm run create-admin         # Interactive CLI to create an admin user in an atomic transaction
 
-# Tests / types / lint (each delegates to both workspaces)
-npm test                     # vitest run in backend + frontend
-npm run typecheck            # tsc --noEmit in both
-npm run lint                 # biome lint in both
+# Testing
+npm test                     # Run all Vitest suites across backend + frontend
+npm run test:backend         # Backend Vitest tests
+npm run test:frontend        # Frontend Vitest tests
+
+# Code Quality (Biome runs at root level across backend/ and frontend/)
+npm run lint                 # Biome lint check
+npm run lint:fix             # Auto-fix lint issues
+npm run format               # Biome format check
+npm run format:fix           # Auto-format code
+npm run typecheck            # TypeScript check (tsc --noEmit) across backend + frontend
+npm run check                # Combined format + lint + typecheck
+
+# Production Builds
+npm run build:backend        # Compile backend TypeScript to backend/dist
+npm run build:frontend       # Build Next.js production app
+npm run build:cli            # Build scaffolding CLI package (packages/cli)
+npm run build:all            # Build backend, frontend, and CLI
 ```
 
-Single test / targeted runs (run inside the workspace, not root):
+---
 
-```bash
-npm test --workspace=backend -- src/services/__tests__/auth.service.test.ts
-npm test --workspace=frontend -- -t "renders login form"
-npm run test:watch --workspace=backend
-npm run coverage --workspace=backend
-```
+## Architecture & Key Patterns
 
-Formatting/linting is **Biome** (not ESLint/Prettier). Lint scripts are scoped to `--diagnostic-level=error`; `*:fix` variants write changes. There is no root `format` script — use `--workspace=backend|frontend`.
+### Backend (`backend/src/`)
 
-## CLI package (`packages/cli`)
+- **Entry & Bootstrap (`main.ts`, `app.module.ts`)**:
+  - Global prefix `/api` (except `/health`).
+  - `helmet` configured with CSP relaxation on `/api/docs` for Swagger UI.
+  - Global guards registered via `APP_GUARD` in order:
+    1. `AppThrottlerGuard` (`src/common/guards/throttler.guard.ts`) — explicitly injects `@Inject(Reflector)` to avoid CJS/ESM class identity mismatches under `tsx`.
+    2. `JwtAuthGuard` (`src/common/guards/jwt-auth.guard.ts`) — validates `access_token` cookie or Bearer token; respects `@Public()`.
+    3. `PermissionsGuard` (`src/common/guards/permissions.guard.ts`) — checks `@RequirePermissions(...)` using `PermissionsCacheService` (Redis / In-Memory cache with 10-minute TTL).
+  - Global interceptors:
+    - `AuditLogInterceptor` (`APP_INTERCEPTOR`) — records actions for routes decorated with `@Audit(...)`, redacting sensitive keys (`password`, `token`, etc.).
+    - `TransformInterceptor` — wraps responses into `{ success: true, message, data, meta? }` while passing through SSE `MessageEvent` streams (`/api/notifications/stream`) untouched.
+  - Global filter:
+    - `AllExceptionsFilter` — maps `AppError` codes (`ERROR_MAP`), Zod errors, and NestJS `HttpException`s (including duck-typed CJS `HttpException` instances like `ThrottlerException`) into `{ success: false, message, errors? }`.
 
-```bash
-npm run build --workspace=packages/cli          # tsc → dist/
-npm test --workspace=packages/cli               # scaffold + prompts tests
-node packages/cli/scripts/copy-templates.js     # regenerate templates/ from backend|frontend|docs
-```
+- **Validation (`src/common/pipes/zod-validation.pipe.ts`)**:
+  - `new ZodValidationPipe(schema, targetType = "body")` only validates arguments matching `targetType` (`"body"` by default), preventing method-level `@UsePipes(...)` from colliding with `@Param("id", ParseIntPipe)`.
 
-- `templates/` and `dist/` are gitignored; they are regenerated by `prepack` (`build && copy-templates.js`) on `npm publish`.
-- **Bump `packages/cli/package.json` version before publishing** — npm rejects republishing the same version. Publish: `npm publish --workspace=packages/cli --access public --otp=XXXXXX` (the npm account uses 2FA).
-- `copy-templates.js` (publish-time) and `scaffold.ts` (install-time) share the same exclusion list: `node_modules`, `.next`, `dist`, `generated`, `coverage`, `.git`, `.claude`, `superpowers`, and `.env*` (but **not** `.env.example`). Exclusions are matched by **path segment relative to the source root** — never by absolute-path substring, because at `npx` time the package lives under `node_modules/` and a substring match would exclude everything. Preserve this when editing either file.
+- **Database (`src/database/`)**:
+  - `schema/` contains PostgreSQL table definitions (`users`, `roles`, `permissions`, `user_roles`, `role_permissions`, `refresh_tokens`, `email_verification_tokens`, `password_reset_tokens`, `audit_logs`, `notifications`, `notification_roles`, `notification_reads`).
+  - Injected into NestJS services via `@Inject(DRIZZLE_DB) private readonly db: DrizzleDb`.
 
-## Backend architecture
+- **Permissions Cache Invalidation**:
+  - Whenever roles or permissions are mutated in `UsersService`, `RolesService`, or `PermissionsService`, call `this.permissionsCache.invalidateUser(userId)` or `this.permissionsCache.invalidateAll()` so `PermissionsGuard` immediately reflects the updated permissions.
 
-Strict layered flow, one direction only:
+### Frontend (`frontend/src/`)
 
-```
-routes/ → controllers/ → services/ → repositories/ → Prisma (lib/prisma.ts)
-```
-
-- **routes/** compose middleware per endpoint: `authMiddleware` → `requirePermission(...)` → `validate(zodSchema)` → controller → `auditLog(action, resourceType)`. Swagger JSDoc lives in route files.
-- **controllers/** parse the request, call a service, and format the response via `lib/http-response.ts`. Errors go through `lib/handle-error.ts` (a centralized code→message/status map) — don't hand-roll error responses.
-- **services/** hold business logic and throw typed errors (e.g. `throw new Error("NOT_FOUND")`); **repositories/** are Prisma queries only, no business logic.
-- All responses use the `ApiResponse<T>` envelope: `{ success, message, data }`.
-
-### Auth & RBAC model
-
-- JWT access token (15m) + refresh token (7d), both in **httpOnly cookies** (`access_token`, `refresh_token`). Refresh tokens are hashed in the DB and **rotated** on every refresh.
-- **Permissions are embedded in the access-token JWT payload** (`{ userId, email, roles, permissions }`). `authMiddleware` decodes the token and attaches `req.user`; `requirePermission` checks `req.user.permissions` with **no DB query per request**. Consequence: permission changes only take effect after the access token expires and the client refreshes (~15m).
-- `requirePermission(perm | perm[])` grants access if the user has **at least one** of the listed permissions.
-- Permissions use `resource:action` format (e.g. `users:read`, `roles:update`).
-
-### Prisma specifics (important, non-obvious)
-
-- The client is generated to **`backend/src/generated/prisma/`** (not `node_modules`). Import from `../generated/prisma/index.js`, not `@prisma/client`. This is an ESM/Node-compat workaround; `src/generated/` is gitignored, so `npm run prisma:generate` is mandatory after install or schema changes.
-- Uses the **driver adapter** `@prisma/adapter-mariadb` (`lib/prisma.ts`) with `allowPublicKeyRetrieval: true` for MySQL 8/9 auth. The datasource URL is built in `prisma.config.ts` from `DB_*` env vars (the schema's `datasource` block has no `url`).
-- `config/env.ts` validates all env vars with Zod at startup and **exits the process** if any are missing/invalid. `JWT_*_SECRET` must be ≥32 chars; SMTP vars are required.
-
-## Frontend architecture
-
-Next.js App Router with route groups: `app/(auth)/` (no nav shell) and `app/(dashboard)/` (nav + `ProtectedRoute`).
-
-- **Feature-first**: each domain lives under `features/<name>/` with co-located `components/`, `hooks/`, `types.ts`, schemas, and a `*Page.tsx`. Components are folders with `Component.tsx`, `Component.variants.ts` (tailwind-variants), `index.ts` barrel, and optional `.test.tsx`. Cross-feature primitives live in `shared/`.
-- **Auth state**: Zustand store (`shared/stores/authStore.ts`) persisted to `localStorage` under key `rbac-auth`. Permission checks read from it via `usePermission` / `<PermissionGate>`; route protection via `<ProtectedRoute requiredPermission="...">`.
-- **API layer**: `shared/lib/api-client.ts` is an axios instance with `withCredentials: true` and a response interceptor that, on 401, calls `/auth/refresh` once and replays queued requests (a single-flight refresh queue). It skips refresh for `/auth/login|register|refresh`. `baseURL` comes from `NEXT_PUBLIC_API_URL` (must include `/api`) and has **no fallback** — `frontend/.env.local` is required.
-- Data fetching uses **TanStack Query**; forms use **react-hook-form + Zod**; styling is **Tailwind v4 + tailwind-variants** (no plain CSS); toasts via **sonner**.
-
-## Environment files
-
-- `backend/.env` (from `backend/.env.example`) — DB, JWT secrets, SMTP.
-- `frontend/.env.local` (from `frontend/.env.example`) — `NEXT_PUBLIC_API_URL`.
-- There is **no root `.env.example`**; `copy-templates.js` warns and skips it — expected.
-
-## Conventions
-
-- Commit format: `type(scope): subject` (conventional commits — `feat`, `fix`, `chore`, `docs`, `refactor`, `style`, `test`), imperative, ≤50 chars.
+- **Feature-First Structure (`src/features/<domain>/`)**:
+  - Domains: `auth`, `users`, `roles`, `permissions`, `audit-logs`, `dashboard`, `notifications`, `profile`.
+  - Each feature contains `api/`, `components/`, `hooks/`, `schemas/`, and `types/`.
+- **UI Primitives (`src/shared/components/ui/`)**:
+  - Built on **Shadcn UI** (Radix UI primitives + `class-variance-authority` + `cn()` helper in `src/shared/lib/utils.ts`).
+- **Auth & RBAC Guards**:
+  - `apiClient` (`src/shared/lib/api-client.ts`) sends `withCredentials: true` and queues concurrent requests during `401` token refresh (`POST /api/auth/refresh`).
+  - `ProtectedRoute` and `PermissionGate` (`src/shared/components/guard/`) enforce route and element-level permissions.
+  - Real-time notifications use `EventSource` connected to `/api/notifications/stream` listening for `new_notification` events.

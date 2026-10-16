@@ -3,7 +3,7 @@
 A production-ready Role-Based Access Control starter template for building dashboard applications. Ships with authentication, user management, fine-grained permissions, audit logging, and an admin UI — modern tech stack, clean code, ready to clone and customize.
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
-![NestJS](https://img.shields.io/badge/NestJS-11-red)
+![NestJS](https://img.shields.io/badge/NestJS-12-red)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![Drizzle](https://img.shields.io/badge/Drizzle-ORM-orange)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-NeonDB-blue)
@@ -12,13 +12,14 @@ A production-ready Role-Based Access Control starter template for building dashb
 
 ## Features
 
-- **Authentication** — Register, login, logout, forgot/reset password, email verification
-- **Dual JWT Tokens** — Access token (15 min) + refresh token (7 days) stored in httpOnly cookies with DB rotation
-- **RBAC Authorization** — Fine-grained `resource:action` permissions (e.g. `users:read`, `roles:update`)
+- **Authentication** — Register, login, logout, forgot/reset password, email verification (via Resend SDK)
+- **Dual JWT Tokens** — Access token (15 min) + refresh token (7 days) stored in `httpOnly` cookies with DB rotation
+- **RBAC Authorization & Caching** — Fine-grained `resource:action` permissions backed by Redis / In-Memory `PermissionsCacheService` (10m TTL + automatic invalidation)
+- **Rate Limiting & Security** — Brute-force protection via `@nestjs/throttler` (60 req/min global, 5 req/min on auth endpoints) + strict HTTP security headers (`helmet` & Next.js CSP/HSTS)
 - **User Management** — CRUD users, assign multiple roles, soft delete, Excel export
 - **Role Management** — CRUD roles, assign permissions, Excel export
 - **Permission Management** — CRUD permissions in `resource:action` format
-- **Audit Logging** — Every key action is logged with user, IP, JSONB metadata, and timestamp
+- **Declarative Audit Logging** — Automatic action logging via `@Audit()` decorator & `AuditLogInterceptor` with sensitive-field redaction and JSONB metadata
 - **Admin Dashboard** — Full management UI built with Next.js 16 App Router & Shadcn UI
 - **Notifications** — Real-time broadcasts via Server-Sent Events (SSE)
 
@@ -26,11 +27,12 @@ A production-ready Role-Based Access Control starter template for building dashb
 
 | Layer | Technology |
 |---|---|
-| **Backend** | NestJS 11+, TypeScript, Modular Architecture |
-| **ORM & Database** | Drizzle ORM + PostgreSQL / NeonDB |
-| **Frontend** | Next.js 16 (App Router), React 19, Tailwind CSS v4 |
+| **Backend** | NestJS 12, TypeScript, Modular Architecture, `@nestjs/throttler`, Helmet |
+| **ORM & Database** | Drizzle ORM + PostgreSQL / NeonDB Serverless |
+| **Caching** | Redis (`ioredis`) with automatic In-Memory fallback (10m TTL) |
+| **Frontend** | Next.js 16 (App Router, Turbopack), React 19, Tailwind CSS v4 |
 | **UI Components** | Shadcn UI (Radix UI primitives + CVA) |
-| **Auth** | Stateless JWT in httpOnly Cookies, DB Token Rotation |
+| **Auth** | Stateless JWT in `httpOnly` Cookies, DB Token Rotation |
 | **Email** | Resend SDK (https://resend.com) + Local Simulation Mode |
 | **API Docs** | Swagger / OpenAPI 3.0 at `/api/docs` |
 | **Validation** | Zod schemas (Backend & Frontend) |

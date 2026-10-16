@@ -49,6 +49,9 @@ JWT_REFRESH_SECRET=<your-different-random-secret-min-32-chars>
 # Optional in dev (falls back to simulation mode in console if omitted)
 RESEND_API_KEY=re_your_api_key_here
 RESEND_FROM=onboarding@resend.dev
+
+# Redis Cache (Optional — automatically falls back to In-Memory cache if omitted)
+# REDIS_URL=redis://localhost:6379
 ```
 
 `frontend/.env.local` already defaults to `NEXT_PUBLIC_API_URL=http://localhost:3001/api` — no changes needed for local development.

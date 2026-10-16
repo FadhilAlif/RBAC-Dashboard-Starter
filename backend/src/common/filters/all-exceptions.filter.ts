@@ -18,6 +18,7 @@ const ERROR_MAP: Record<string, { status: number; message: string }> = {
   WRONG_PASSWORD: { status: 400, message: "Current password is incorrect." },
   ROLE_NOT_FOUND: { status: 404, message: "Role not found." },
   ROLE_NAME_TAKEN: { status: 409, message: "A role with this name already exists." },
+  PERMISSION_NOT_FOUND: { status: 404, message: "Permission not found." },
   PERMISSION_NAME_TAKEN: { status: 409, message: "A permission with this name already exists." },
   EMAIL_NOT_VERIFIED: { status: 403, message: "Please verify your email address before logging in." },
   INVALID_VERIFICATION_TOKEN: { status: 400, message: "This verification link is invalid or has already been used." },
@@ -27,6 +28,20 @@ const ERROR_MAP: Record<string, { status: number; message: string }> = {
   RESET_TOKEN_EXPIRED: { status: 400, message: "This reset link has expired. Please request a new one." },
   NOTIFICATION_NOT_FOUND: { status: 404, message: "Notification not found." },
 };
+
+function isHttpExceptionLike(
+  exception: unknown,
+): exception is HttpException {
+  return (
+    exception instanceof HttpException ||
+    (typeof exception === "object" &&
+      exception !== null &&
+      "getStatus" in exception &&
+      typeof (exception as HttpException).getStatus === "function" &&
+      "getResponse" in exception &&
+      typeof (exception as HttpException).getResponse === "function")
+  );
+}
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -40,7 +55,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     let message = "An unexpected error occurred. Please try again.";
     let errors: unknown = undefined;
 
-    if (exception instanceof HttpException) {
+    if (isHttpExceptionLike(exception)) {
       status = exception.getStatus();
       const res = exception.getResponse();
       if (typeof res === "string") {

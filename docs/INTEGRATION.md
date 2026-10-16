@@ -60,6 +60,30 @@ export class ReportsController {
 }
 ```
 
+### Declarative Audit Logging (`@Audit`) & Custom Rate Limiting (`@Throttle`)
+
+Use `@Audit()` to automatically record actions in `audit_logs` (with automatic redaction of sensitive fields via `AuditLogInterceptor`), and `@Throttle()` to customize rate limits per endpoint:
+
+```typescript
+import { Body, Controller, Post, UsePipes } from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
+import { Audit } from "@/common/decorators/audit.decorator";
+import { RequirePermissions } from "@/common/decorators/require-permissions.decorator";
+import { ZodValidationPipe } from "@/common/pipes/zod-validation.pipe";
+
+@Controller("reports")
+export class ReportsController {
+  @Post()
+  @RequirePermissions("reports:create")
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // Max 10 creations/min per IP
+  @Audit({ action: "reports:create", resourceType: "reports" })
+  @UsePipes(new ZodValidationPipe(createReportSchema))
+  async createReport(@Body() dto: CreateReportDto) {
+    return this.reportsService.create(dto);
+  }
+}
+```
+
 ---
 
 ## Adding a New Backend Module in NestJS

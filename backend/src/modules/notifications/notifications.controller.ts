@@ -20,6 +20,7 @@ import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard.js";
 import { PermissionsGuard } from "../../common/guards/permissions.guard.js";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator.js";
 import { CurrentUser } from "../../common/decorators/current-user.decorator.js";
+import { Audit } from "../../common/decorators/audit.decorator.js";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe.js";
 import type { AuthenticatedUser } from "../../common/types/authenticated-user.type.js";
 import {
@@ -46,7 +47,8 @@ export class NotificationsController {
     return this.notificationsService.getNotifications(user.id);
   }
 
-  @Post()
+  @Audit({ action: "notifications:broadcast", resourceType: "notifications" })
+  @Post(["", "broadcast"])
   @HttpCode(HttpStatus.CREATED)
   @RequirePermissions("notifications:create")
   @UsePipes(new ZodValidationPipe(broadcastNotificationSchema))

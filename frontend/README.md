@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RBAC Boilerplate — Frontend (`frontend/`)
+
+Next.js 16 (App Router) admin dashboard for the **RBAC Boilerplate**, built with React 19, TypeScript, Tailwind CSS v4, and **Shadcn UI** (Radix UI primitives + CVA).
+
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router, Turbopack) + React 19
+- **Styling & UI:** Tailwind CSS v4 + Shadcn UI (`src/shared/components/ui/`)
+- **State Management:** Zustand (`authStore` persisted to `localStorage`)
+- **Server State & Data Fetching:** TanStack React Query v5 + Axios (`apiClient` with automatic `401` token refresh queue)
+- **Forms & Validation:** React Hook Form + Zod
+- **Real-Time Notifications:** Browser `EventSource` (SSE stream `/api/notifications/stream`)
+- **Security:** Strict HTTP Security Headers configured in `next.config.ts` (`CSP`, `HSTS`, `X-Frame-Options`, `X-Content-Type-Options`)
+- **Testing:** Vitest + React Testing Library
 
 ## Getting Started
 
-First, run the development server:
+From the repository root:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Copy environment variables
+cp frontend/.env.example frontend/.env.local
+
+# Start development server (http://localhost:3000)
+npm run dev:frontend
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Or directly inside `frontend/`:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run dev        # Start Next.js 16 dev server with Turbopack
+npm run build      # Production build
+npm run typecheck  # Run TypeScript compiler check
+npm test           # Run Vitest component & hook unit tests
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Directory Structure
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+├── app/
+│   ├── (auth)/        # Public authentication routes (login, register, forgot/reset password, verify-email)
+│   └── (dashboard)/   # Protected admin routes (dashboard, users, roles, permissions, audit-logs, notifications, profile)
+├── features/          # Domain-driven feature modules (api, components, hooks, schemas, types)
+└── shared/
+    ├── components/
+    │   ├── common/    # Layout navigation, BrandMark, ErrorBoundary
+    │   ├── guard/     # ProtectedRoute, PermissionGate
+    │   └── ui/        # Shadcn UI primitives (Button, Input, Dialog, Select, Table, Badge, Tabs, etc.)
+    ├── hooks/         # Shared hooks (usePermission, etc.)
+    ├── lib/           # Axios client, Zod helpers, `cn()` utility
+    └── stores/        # Zustand stores
+```

@@ -11,8 +11,8 @@ Tokens are set by `/api/auth/login` and rotated by `/api/auth/refresh`.
 
 | Cookie | Value | Lifetime |
 |--------|-------|----------|
-| `accessToken` | JWT | 15 minutes |
-| `refreshToken` | JWT | 7 days |
+| `access_token` | JWT | 15 minutes |
+| `refresh_token` | JWT | 7 days |
 
 When the access token expires, the frontend axios interceptor automatically calls
 `POST /api/auth/refresh` and retries the original request.
@@ -772,41 +772,40 @@ List notifications for the authenticated user.
 ```json
 {
   "success": true,
-  "data": {
-    "notifications": [
-      {
-        "id": 1,
-        "title": "Welcome",
-        "message": "Your account has been created",
-        "isRead": false,
-        "createdAt": "2026-06-01T00:00:00.000Z"
-      }
-    ],
-    "unreadCount": 1
-  }
+  "data": [
+    {
+      "id": 1,
+      "title": "Welcome",
+      "message": "Your account has been created",
+      "target_roles": ["admin"],
+      "read_at": null,
+      "created_at": "2026-06-01T00:00:00.000Z",
+      "creator_name": "System"
+    }
+  ]
 }
 ```
 
 ---
 
-### POST /api/notifications
+### POST /api/notifications (or POST /api/notifications/broadcast)
 
-Create a notification (admin only).
+Broadcast a notification to specific roles or all roles (`notifications:create` permission required).
 
-**Auth required:** Yes
+**Auth required:** Yes | **Permission:** `notifications:create`
 
 **Request:**
 ```json
 {
   "title": "System Maintenance",
   "message": "Scheduled maintenance on Sunday 2am.",
-  "roleIds": [1, 2]
+  "targetRoleIds": [1, 2]
 }
 ```
 
 **Response 201:**
 ```json
-{ "success": true, "message": "Notification sent", "data": null }
+{ "success": true, "message": "Notification broadcasted successfully.", "data": { "id": 1, "title": "System Maintenance" } }
 ```
 
 ---
@@ -845,7 +844,9 @@ All errors follow this shape:
 {
   "success": false,
   "message": "Human-readable error message",
-  "data": null
+  "errors": {
+    "fieldName": ["Specific validation error"]
+  }
 }
 ```
 
@@ -855,5 +856,5 @@ Common HTTP status codes:
 - `403` — Forbidden (missing permission or inactive/unverified account)
 - `404` — Resource not found
 - `409` — Conflict (duplicate email, unique constraint violation)
-- `429` — Rate limited (auth endpoints: 20 requests per 15 minutes)
+- `429` — Rate limited (Global: 60 req/min; Auth endpoints: 5 req/min; Resend verification: 3 req/min)
 - `500` — Internal server error

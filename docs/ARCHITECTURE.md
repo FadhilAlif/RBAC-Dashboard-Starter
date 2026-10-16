@@ -39,9 +39,9 @@ backend/
     ├── common/
     │   ├── decorators/        # @CurrentUser(), @RequirePermissions(), @Public(), @Audit()
     │   ├── filters/           # AllExceptionsFilter (centralized standard error envelope)
-    │   ├── guards/            # JwtAuthGuard, PermissionsGuard (cached permission check)
-    │   ├── interceptors/      # TransformInterceptor, AuditLogInterceptor (declarative audit)
-    │   └── pipes/             # ZodValidationPipe (type-safe request body/query validation)
+    │   ├── guards/            # AppThrottlerGuard, JwtAuthGuard, PermissionsGuard (cached permission check)
+    │   ├── interceptors/      # TransformInterceptor (with SSE passthrough), AuditLogInterceptor
+    │   └── pipes/             # ZodValidationPipe (scoped targetType validation for body/query/param)
     ├── database/
     │   ├── connection.ts      # Connection manager (NeonDB connection string or local PG pool)
     │   ├── database.module.ts # Global NestJS DatabaseModule injecting DRIZZLE_DB
